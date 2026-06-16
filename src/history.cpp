@@ -9,12 +9,6 @@ static float sumPressure = 0.0f;
 
 static int historyCounter = 0;
 
-void history_init() {
-    // Hier könnte man z.B. die Historien-Arrays mit einem ungültigen Wert initialisieren, um zu erkennen, ob sie schon gefüllt wurden.
-}
-
-
-
 void history_update() {
     sumTemp += app.temp;
     sumHumidity += app.humidity;
@@ -45,43 +39,51 @@ void history_update() {
         sumPressure = 0.0f;
         historyCounter = 0;
     }
+    if (app.validSamples >=1) {
     updateMinMax();
+    }
     determineWeatherTendency();
 }
 
 void updateMinMax() {
   // Min/Max Temperatur bestimmen
+  app.minTemp = app.tempHistory[0];
+  app.maxTemp = app.tempHistory[0];
 
-  for (int i = 0; i < app.validSamples; ++i) {
+  for (int i = 1 ; i < app.validSamples; ++i) {
     if (app.tempHistory[i] < app.minTemp) {
         app.minTemp = app.tempHistory[i];
     };
   };
-  for (int i = 0; i < app.validSamples; ++i) {
+  for (int i = 1; i < app.validSamples; ++i) {
     if (app.tempHistory[i] > app.maxTemp) {
       app.maxTemp = app.tempHistory[i];
     };
   };
   // Min/Max Luftfeuchtigkeit bestimmen
-  
-  for (int i = 0; i < app.validSamples; ++i) {
+  app.minHumidity = app.humidityHistory[0];
+  app.maxHumidity = app.humidityHistory[0];
+
+  for (int i = 1; i < app.validSamples; ++i) {
     if (app.humidityHistory[i] < app.minHumidity) {
       app.minHumidity = app.humidityHistory[i];
     };
   };
-  for (int i = 0; i < app.validSamples; ++i) {
+  for (int i = 1; i < app.validSamples; ++i) {
     if (app.humidityHistory[i] > app.maxHumidity) {
       app.maxHumidity = app.humidityHistory[i];
     };
   };
   // Min/Max Pressure bestimmen
+  app.minPressure = app.pressureHistory[0];
+  app.maxPressure = app.pressureHistory[0];
   
-  for (int i = 0; i < app.validSamples; ++i) {
+  for (int i = 1; i < app.validSamples; ++i) {
     if (app.pressureHistory[i] < app.minPressure) {
       app.minPressure = app.pressureHistory[i];
     };
   };
-  for (int i = 0; i < app.validSamples; ++i) {
+  for (int i = 1; i < app.validSamples; ++i) {
     if (app.pressureHistory[i] > app.maxPressure) {
       app.maxPressure = app.pressureHistory[i];
     };

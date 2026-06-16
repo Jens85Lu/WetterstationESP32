@@ -1,6 +1,10 @@
 # 🌦️ Weather Station ESP32
 
-ESP32-based weather station with OLED user interface, historical data logging and environmental monitoring.
+<p align="center">
+  <img src="docs/weatherstation.jpg" width="500">
+</p>
+
+ESP32-based weather station with OLED user interface, historical data logging trend analysis.
 
 ---
 
@@ -54,6 +58,15 @@ include/
 lib/
 platformio.ini
 ```
+
+---
+
+## OLED Screen
+
+<p align="center">
+  <img src="docs/oled_main.jpg" width="250">
+  <img src="docs/oled_graph.jpg" width="250">
+</p>
 
 ---
 
