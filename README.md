@@ -79,13 +79,13 @@ platformio.ini
 * Ring buffer data processing
 * Historical trend analysis
 * Modular C++ design
+* WiFi connectivity
+* NTP time synchronization
 
 ---
 
 ## 🚀 Planned Features
 
-* WiFi connectivity
-* NTP time synchronization
 * OTA updates
 * MQTT support
 * Web dashboard
