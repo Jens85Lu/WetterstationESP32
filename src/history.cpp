@@ -1,7 +1,7 @@
 #include "history.h"
 #include "app_data.h"
 
-constexpr int N = 6; // später: HISTORY_AVERAGE_COUNT
+constexpr int N = 180; // später: HISTORY_AVERAGE_COUNT
 
 static float sumTemp = 0.0f;
 static float sumHumidity = 0.0f;

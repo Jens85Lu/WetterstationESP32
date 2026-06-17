@@ -49,6 +49,25 @@ void draw_main(const AppData& app) {
     snprintf(buf, sizeof(buf), "Press: %.1f hPa", app.pressure);
     display.drawStr(0, 45, buf);
 
+    snprintf(
+    buf,
+    sizeof(buf),
+    "%02d:%02d",
+    app.hour,
+    app.minute
+    );
+    display.drawStr(80, 15, buf);
+
+    snprintf(
+    buf,
+    sizeof(buf),
+    "%02d.%02d.%04d",
+    app.day,
+    app.month,
+    app.year
+    );
+    display.drawStr(50, 63, buf);
+
 }
 
   void draw_minmax(const AppData& app) {

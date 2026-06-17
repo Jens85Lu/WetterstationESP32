@@ -34,12 +34,15 @@ struct AppData
     int historyIndex = -1;
     int validSamples;
 
-    /* // Mittelwerte für history vielleicht später mal nötig
-    float meanTemp;
-    float meanHumidity;
-    float meanPressure;
-    */
+    int hour;
+    int minute;
 
+    int day;
+    int month;
+    int year;
+
+
+    bool wifiConnected;
     bool sensorValid = false;   
     bool ledState; 
 

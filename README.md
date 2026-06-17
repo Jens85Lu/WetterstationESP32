@@ -90,4 +90,5 @@ platformio.ini
 * MQTT support
 * Web dashboard
 * Home Assistant integration
+* PCB and protection case
 
