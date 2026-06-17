@@ -20,7 +20,7 @@ void time_init() {
 
 void time_update() {
     
-    tm timeinfo;
+    struct tm timeinfo;
 
         if (!getLocalTime(&timeinfo)) {
         Serial.println("No time available");
