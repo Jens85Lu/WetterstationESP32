@@ -11,8 +11,8 @@ ESP32-based weather station with OLED user interface, historical data logging tr
 ## 🔧 Hardware
 
 * ESP32-WROOM-32
-* DHT22 (Temperature & Humidity)
-* BMP280 (Air Pressure)
+* DHT22 (Temperature & Humidity) über GPIO
+* BMP280 (Air Pressure) über I2C
 * SH1106 OLED Display (I2C)
 * Push Button
 
