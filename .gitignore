@@ -5,4 +5,5 @@
 .vscode/ipch
 
 gitCheatSheet.txt
+include/secrets.h
 

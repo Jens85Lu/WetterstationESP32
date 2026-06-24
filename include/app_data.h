@@ -2,11 +2,9 @@
 
 enum uiScreen {
   SCREEN_MAIN,
-  SCREEN_MINMAX,
   SCREEN_GRAPH_TEMP,
   SCREEN_GRAPH_HUM,
   SCREEN_GRAPH_PRESSURE,
-  SCREEN_TREND,
   SCREEN_SCREENSAVER
 };
 
@@ -34,12 +32,16 @@ struct AppData
     int historyIndex = -1;
     int validSamples;
 
-    /* // Mittelwerte für history vielleicht später mal nötig
-    float meanTemp;
-    float meanHumidity;
-    float meanPressure;
-    */
+    int hour;
+    int minute;
 
+    int day;
+    int month;
+    int year;
+
+
+    bool wifiConnected;
+    bool timeValid = false;
     bool sensorValid = false;   
     bool ledState; 
 

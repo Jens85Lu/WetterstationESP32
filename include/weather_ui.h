@@ -39,14 +39,11 @@ static const uint8_t sunBitmap[] PROGMEM = {
 void weather_show(const AppData& data);
 
 void draw_main(const AppData& app);
-
-void draw_minmax(const AppData& app);
+void drawWeatherTendency(int x, int y, int tendency);
+void drawWifiIcon(int x, int y, bool connected);
 
 void draw_tempHistory(const AppData& app);
 void draw_humHistory(const AppData& app);
 void draw_pressHistory(const AppData& app);
-
-void draw_trend(const AppData& app);
-
 
 #endif
