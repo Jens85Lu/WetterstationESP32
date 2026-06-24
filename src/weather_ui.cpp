@@ -10,11 +10,6 @@ void weather_show(const AppData& app)
         case SCREEN_MAIN:
             draw_main(app);
             break;
-
-        case SCREEN_MINMAX:
-            draw_minmax(app);
-            break;
-        
         case SCREEN_GRAPH_TEMP:
             draw_tempHistory(app);
             break;
@@ -24,9 +19,6 @@ void weather_show(const AppData& app)
         case SCREEN_GRAPH_PRESSURE:
             draw_pressHistory(app);
             break;
-        case SCREEN_TREND:
-            draw_trend(app);
-            break;
         case SCREEN_SCREENSAVER:
             display.clearBuffer();
             break;
@@ -34,62 +26,126 @@ void weather_show(const AppData& app)
     display.sendBuffer();
 }
 
-void draw_main(const AppData& app) {
 
-    char buf[32];
+void drawWeatherTendency(int x, int y, int tendency)
+{
+    display.setFont(u8g2_font_open_iconic_weather_2x_t);
 
-    display.setFont(u8g2_font_ncenB08_tr); //u8g2_font_6x12_tr
+    switch (tendency)
+    {
+        case 2:
+            display.drawGlyph(x, y, 69); // Sonne
+            break;
 
-    snprintf(buf, sizeof(buf), "Temp: %.1f C", app.temp);
-    display.drawStr(0, 15, buf);
+        case 1:
+            display.drawGlyph(x, y, 65); // Sonne/Wolke
+            break;
 
-    snprintf(buf, sizeof(buf), "Hum : %.1f %%", app.humidity);
-    display.drawStr(0, 30, buf);
+        case 0:
+            display.drawGlyph(x, y, 64); // Wolke
+            break;
 
-    snprintf(buf, sizeof(buf), "Press: %.1f hPa", app.pressure);
-    display.drawStr(0, 45, buf);
+        case -1:
+            display.drawGlyph(x, y, 67); // Regen
+            break;
 
-    snprintf(
-    buf,
-    sizeof(buf),
-    "%02d:%02d",
-    app.hour,
-    app.minute
-    );
-    display.drawStr(80, 15, buf);
-
-    snprintf(
-    buf,
-    sizeof(buf),
-    "%02d.%02d.%04d",
-    app.day,
-    app.month,
-    app.year
-    );
-    display.drawStr(50, 63, buf);
-
+        case -2:
+            display.drawGlyph(x, y, 66); // Gewitter/Regen
+            break;
+    }
 }
 
-  void draw_minmax(const AppData& app) {
+void drawWifiIcon(int x, int y, bool connected)
+{
+    if (!connected)
+    {
+        display.drawLine(x , y + 4, x , y - 4);
+        return;
+    }
 
-    display.clearBuffer();
-    display.setFont(u8g2_font_6x12_tr);
+    // kleiner Balken
+    display.drawBox(x - 8, y - 2, 2, 2);
 
+    // mittlerer Balken
+    display.drawBox(x - 4, y - 4, 2, 4);
+
+    // großer Balken
+    display.drawBox(x,     y - 6, 2, 6);
+}
+
+void drawDegreeSymbol(int x, int y)
+{
+    display.drawCircle(x, y, 2);
+    display.drawCircle(x, y, 3);
+}
+
+void draw_main(const AppData& app)
+{
     char buf[32];
 
-    snprintf(buf, sizeof(buf), "Tmin: %.1f C", app.minTemp);
-    display.drawStr(0, 12, buf);
+    // Datum
+    //display.setFont(u8g2_font_5x8_tr);
+    display.setFont(u8g2_font_ncenB08_tr);
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%02d.%02d.%04d",
+        app.day,
+        app.month,
+        app.year
+    );
+    display.drawStr(0, 8, buf);
 
-    snprintf(buf, sizeof(buf), "Tmax: %.1f C", app.maxTemp);
-    display.drawStr(0, 24, buf);
+    // Uhrzeit
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%02d:%02d",
+        app.hour,
+        app.minute
+    );
+    display.drawStr(70, 8, buf);
 
-    snprintf(buf, sizeof(buf), "Hmin: %.1f %%", app.minHumidity);
-    display.drawStr(0, 40, buf);
+    //WiFi Symbol
 
-    snprintf(buf, sizeof(buf), "Hmax: %.1f %%", app.maxHumidity);
-    display.drawStr(0, 52, buf);
+    drawWifiIcon(118, 8, app.wifiConnected);
 
-    display.sendBuffer();
+    // Wettertendenz
+    drawWeatherTendency(110, 32, app.weatherTendency);
+
+    // Temperatur groß
+    display.setFont(u8g2_font_logisoso20_tr);
+
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%.1f",
+        app.temp
+    );
+
+    display.drawStr(20, 40, buf);
+    display.drawStr(85, 40, "C");
+    drawDegreeSymbol(80, 22);
+
+    // Untere Zeile
+    display.setFont(u8g2_font_helvB10_tr);
+    // Feuchte
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%.1f%%",
+        app.humidity
+    );
+    display.drawStr(0, 62, buf);
+
+    // Druck
+    snprintf(
+        buf,
+        sizeof(buf),
+        "%.1f hPa",
+        app.pressure
+    );
+    display.drawStr(53, 62, buf);
 }
 
 
@@ -108,7 +164,7 @@ void draw_tempHistory(const AppData& app) {
     }
     // Es werden zwei Datenpunkte gebraucht, um eine Linie zu zeichnen
     if (app.validSamples < 2) {
-      display.drawStr(10, 30, "Collecting app...");
+      display.drawStr(10, 30, "Collecting data...");
       return;
     }
     // Historie als Graph zeichnen, neueste Daten rechts
@@ -160,7 +216,7 @@ void draw_humHistory(const AppData& app) {
     }
     // Es werden zwei Datenpunkte gebraucht, um eine Linie zu zeichnen
     if (app.validSamples < 2) {
-      display.drawStr(10, 30, "Collecting app...");
+      display.drawStr(10, 30, "Collecting data...");
       return;
     }
     // Historie als Graph zeichnen, neueste Daten rechts
@@ -192,8 +248,8 @@ void draw_humHistory(const AppData& app) {
     
     String header = "H: " + String(graphMin, 1) + " - " + String(graphMax, 1)  + "%";
     display.drawStr(10, 12, header.c_str());
-    String currentTempStr = String(app.humidity, 1) + "%";
-    display.drawStr(100, 12, currentTempStr.c_str());
+    String currentHumStr = String(app.humidity, 1) + "%";
+    display.drawStr(100, 12, currentHumStr.c_str());
 }
 
 
@@ -214,7 +270,7 @@ void draw_pressHistory(const AppData& app) {
 
     // Es werden zwei Datenpunkte gebraucht, um eine Linie zu zeichnen
     if (app.validSamples < 2) {
-      display.drawStr(10, 30, "Collecting app...");
+      display.drawStr(10, 30, "Collecting data...");
       return;
     }
     // Historie als Graph zeichnen, neueste Daten rechts
@@ -247,41 +303,6 @@ void draw_pressHistory(const AppData& app) {
     
     String header = "P: " + String(graphMin, 1) + " - " + String(graphMax, 1) + " hPa";
     display.drawStr(10, 12, header.c_str());
-    //String currentTempStr = String(app.pressure_seaLevel, 1) + " hPa";
-    //display.drawStr(100, 12, currentTempStr.c_str());
+    //String currentPressStr = String(app.pressure_seaLevel, 1) + " hPa";
+    //display.drawStr(100, 12, currentPressStr.c_str());
 }
-
-void draw_trend(const AppData& app) {
-  int x = 40;
-  int y = 50;
-  switch(app.weatherTendency)
-  {
-    case 2:
-      display.setFont(u8g2_font_open_iconic_weather_6x_t);
-      display.drawGlyph(x, y, 69);
-      display.drawStr(50, 64, "2");
-      break;
-    case 1:
-      display.setFont(u8g2_font_open_iconic_weather_6x_t);
-      display.drawGlyph(x, y, 65);	
-      display.drawStr(60, 50, "1");
-      break;
-    case 0:
-      display.setFont(u8g2_font_open_iconic_weather_6x_t);
-      display.drawGlyph(x, y, 64);
-      display.setFont(u8g2_font_6x12_tr);
-      display.drawStr(50, 64, "0");
-      break;
-    case -1:
-      display.setFont(u8g2_font_open_iconic_weather_6x_t);
-      display.drawGlyph(x, y, 67);
-      display.drawStr(50, 64, "-1");
-      break;
-    case -2:
-      display.setFont(u8g2_font_open_iconic_embedded_6x_t);
-      display.drawGlyph(x, y, 67);
-      display.drawStr(50, 64, "-2");
-      break;
-  }
-}
-

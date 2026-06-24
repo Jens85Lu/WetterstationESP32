@@ -1,7 +1,7 @@
 #include "time_manager.h"
 #include "app_data.h"
 #include <WiFi.h>
-
+#include <Arduino.h>
 #include <time.h>
 
 void time_init() {
@@ -20,12 +20,13 @@ void time_init() {
 
 void time_update() {
     
+    if (!app.timeValid)
+        return;
+
     struct tm timeinfo;
 
-        if (!getLocalTime(&timeinfo)) {
-        Serial.println("No time available");
+    if (!getLocalTime(&timeinfo, 10))
         return;
-    }
 
     app.hour = timeinfo.tm_hour;
     app.minute = timeinfo.tm_min;

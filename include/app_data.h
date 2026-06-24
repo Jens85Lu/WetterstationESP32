@@ -2,11 +2,9 @@
 
 enum uiScreen {
   SCREEN_MAIN,
-  SCREEN_MINMAX,
   SCREEN_GRAPH_TEMP,
   SCREEN_GRAPH_HUM,
   SCREEN_GRAPH_PRESSURE,
-  SCREEN_TREND,
   SCREEN_SCREENSAVER
 };
 
@@ -43,6 +41,7 @@ struct AppData
 
 
     bool wifiConnected;
+    bool timeValid = false;
     bool sensorValid = false;   
     bool ledState; 
 

@@ -35,6 +35,18 @@ void wifi_init()
 }
 
 void wifi_update() {
+
+    // first time synchronization
+    if (WiFi.status() == WL_CONNECTED && !app.timeValid) {
+        struct tm timeinfo;
+
+        if(getLocalTime(&timeinfo, 100)) {
+            app.timeValid = true;
+            Serial.println("Time synchronized");
+
+        }
+    }
+
     if (WiFi.status() == WL_CONNECTED) {
         app.wifiConnected = true;
         return;
@@ -45,34 +57,12 @@ void wifi_update() {
     // alle 60 Sekunden neu versuchen
     static unsigned long lastWLANSearch = 0;
     
-    if (millis() - lastWLANSearch > 60000 && !app.wifiConnected) {
+    if (millis() - lastWLANSearch > 60000) {
         lastWLANSearch = millis();
-        Serial.println("WiFI reconnect...");
-        WiFi.disconnect();
-        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+        Serial.println("WiFi reconnect...");
 
         WiFi.disconnect();
         WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-        unsigned long start = millis();
-
-        while (WiFi.status() != WL_CONNECTED &&
-            millis() - start < 10000)
-        {
-            delay(200);
-            Serial.print(".");
-        }
-
-        if (WiFi.status() == WL_CONNECTED)
-        {
-            Serial.println("\nWiFi connected");
-            Serial.println(WiFi.localIP());
-            app.wifiConnected = true;
-        }
-        else
-        {
-            Serial.println("\nWiFi failed");
-            app.wifiConnected = false;
-        }
     }
 }

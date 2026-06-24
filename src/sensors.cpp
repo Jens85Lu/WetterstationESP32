@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include <Adafruit_BMP280.h>
 #include <DHT.h>
+#include <app_data.h>
 
 static float temp;
 static float hum;
@@ -25,12 +26,23 @@ void sensors_read() {
     temp = dht_getTemperature();
     hum = dht_getHumidity();
     press = bmp280_getPressure();
+    press = seaLevelPressure(press, 220);
     bmpTemperature = bmp280_getTemperature();
 }
 
-float getTemp() {return temp;}
+float getTemp() {
+    if (isnan(temp)) {
+        return app.temp;
+    } 
+    else return temp;
+}
 
-float getHumidity() {return hum;}
+float getHumidity() {
+    if (isnan(hum)) {
+        return app.humidity;
+    }    
+    else return hum;
+}
 
 float getPressure() {return press;}
 
