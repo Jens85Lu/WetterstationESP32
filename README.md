@@ -64,9 +64,10 @@ platformio.ini
 ## OLED Screen
 
 <p align="center">
-  <img src="docs/oled_main.jpg" width="250">
-  <img src="docs/oled_graph.jpg" width="250">
+  <img src="docs/Temperature.jpg" width="500">
 </p>
+
+
 
 ---
 
@@ -91,4 +92,16 @@ platformio.ini
 * Web dashboard
 * Home Assistant integration
 * PCB and protection case
+
+## v2.1
+- WiFi support
+- Automatic reconnect
+- NTP clock synchronization
+- Redesigned main screen
+- 24h stability test passed
+
+### v2.0
+- ESP32 port
+- OLED UI
+- History graphs
 
