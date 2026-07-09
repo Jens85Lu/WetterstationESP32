@@ -2,7 +2,7 @@
 #include "app_data.h"
 #include <Arduino.h>
 
-constexpr int N = 180; // später: HISTORY_AVERAGE_COUNT
+constexpr int N = 6; // später: HISTORY_AVERAGE_COUNT
 
 static float sumTemp = 0.0f;
 static float sumHumidity = 0.0f;
@@ -23,13 +23,16 @@ void history_update() {
         float avgPressure = sumPressure / historyCounter;
     
         app.historyIndex = (app.historyIndex + 1) % 128; // Ringpuffer-Index aktualisieren
-
+        
         app.tempHistory[app.historyIndex] = avgTemp;
+        app.tempAverage = avgTemp; // Store the average temperature for MQTT
 
         app.humidityHistory[app.historyIndex] = avgHumidity;
-
+        app.humidityAverage = avgHumidity; // Store the average humidity for MQTT
         app.pressureHistory[app.historyIndex] = avgPressure;
+        app.pressureAverage = avgPressure; // Store the average pressure for MQTT
 
+                
         if(app.validSamples < 128) {
             app.validSamples++;
         }

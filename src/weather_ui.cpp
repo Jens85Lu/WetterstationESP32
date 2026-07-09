@@ -59,7 +59,7 @@ void drawWifiIcon(int x, int y, bool connected)
 {
     if (!connected)
     {
-        display.drawLine(x , y + 4, x , y - 4);
+        display.drawLine(x - 4 , y, x + 4 , y);
         return;
     }
 

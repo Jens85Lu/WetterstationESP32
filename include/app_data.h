@@ -19,10 +19,13 @@ struct AppData
 
     float minTemp = 999.0f;
     float maxTemp = -999.0f ;
+    float tempAverage = 0.0f; // Average temperature over the last N samples
     float minHumidity = 999.0f;
     float maxHumidity = -999.0f;
+    float humidityAverage = 0.0f; // Average humidity over the last N samples
     float minPressure = 9999.0f;
     float maxPressure = -9999.0f;
+    float pressureAverage = 0.0f; // Average pressure over the last N samples
 
     // Historie
     float tempHistory[128];

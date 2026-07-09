@@ -9,6 +9,7 @@
 #include <time.h>
 #include "time_manager.h"
 #include "wifi_manager.h"
+#include "mqtt.h"
 
 
 void setup() {
@@ -20,6 +21,7 @@ void setup() {
     button_init();
     wifi_init();
     time_init();
+    mqtt_init();
 }
 
 
@@ -36,4 +38,21 @@ void loop() {
         lastTimeUpdate = millis();
         time_update();
     }
+    
+    static unsigned long lastMQTTTry = 0;
+
+    if (app.wifiConnected &&
+        millis() - lastMQTTTry > 10000)
+    {
+        lastMQTTTry = millis();
+        mqtt_connect();
+    }
+
+    mqttClient.loop();
+    /*sendTemperature(app);
+    sendHumidity(app);
+    sendPressure(app);
+    sendUptime();*/
+    //sendLiveData(app);
+    sendHistoryData(app);
 }
