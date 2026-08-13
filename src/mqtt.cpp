@@ -3,6 +3,8 @@
 #include "app_data.h"
 #include <ArduinoJson.h>
 
+constexpr int HISTORY_PACKET_SIZE = 20;
+
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
@@ -21,13 +23,18 @@ void mqtt_connect()
 
     Serial.println("MQTT connecting...");
 
-    if (mqttClient.connect("WetterstationESP32"))
+    if (mqttClient.connect("WetterstationESP32",
+                            "weather/status",
+                            0,
+                            true,
+                            "offline"))
     {
         Serial.println("MQTT connected");
 
         mqttClient.publish(
             "weather/status",
-            "online", true
+            "online",
+            true
         );
 
         sendIP();
@@ -166,30 +173,48 @@ void sendLiveData(const AppData& app)
 
 void sendHistoryData(const AppData& app)
 {
-    static unsigned long lastPublish = 0;
-    if (millis() - lastPublish < 12000)
-        return;
-    lastPublish = millis();
 
     JsonDocument doc;
 
-    doc["temp"] = app.tempAverage;
-    doc["humidity"] = app.humidityAverage;
-    doc["pressure"] = app.pressureAverage;
-    doc["uptime"] = millis() / 1000;
-    doc["wifi"] = app.wifiConnected;
-    doc["ip"] = WiFi.localIP().toString();
-    char timeStr[6];
-    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", app.hour, app.minute);
-    doc["time"] = timeStr;
-    doc["tendency"] = app.weatherTendency;
+    doc["count"] = app.validSamples;
 
+    JsonArray history = doc["tempHistory"].to<JsonArray>();
 
-    char payload[256];
+    int startIndex;
+
+    if (app.validSamples < 128)
+    {
+        startIndex = 0;
+    }
+    else
+    {
+        startIndex = (app.historyIndex + 1) % 128;
+    }
+
+    for (int i = 0; i < app.validSamples; i++)
+    {
+        int index = (startIndex + i) % 128;
+
+        history.add(round(app.tempHistory[index] * 10.0f) / 10.0f);
+    }
+
+    char payload[2048];
+
     serializeJson(doc, payload);
 
-    mqttClient.publish(
-        "weather/live",
-        payload, true
-    );
+    
+    bool success = mqttClient.publish(
+    "weather/history",
+    payload
+);
+
+// Serial.print("HISTORY count=");
+// Serial.print(app.validSamples);
+
+// Serial.print(" payload=");
+// Serial.print(strlen(payload));
+// Serial.print(" bytes");
+
+// Serial.print(" publish=");
+// Serial.println(success ? "OK" : "FAILED");
 }

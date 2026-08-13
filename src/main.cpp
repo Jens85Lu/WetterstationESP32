@@ -53,6 +53,6 @@ void loop() {
     sendHumidity(app);
     sendPressure(app);
     sendUptime();*/
-    //sendLiveData(app);
+    sendLiveData(app);
     sendHistoryData(app);
 }

@@ -36,7 +36,7 @@ void history_update() {
         if(app.validSamples < 128) {
             app.validSamples++;
         }
-    
+            
         // Sums zurücksetzen
         sumTemp = 0.0f;
         sumHumidity = 0.0f;
