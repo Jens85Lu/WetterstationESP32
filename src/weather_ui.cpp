@@ -1,5 +1,6 @@
 #include "weather_ui.h"
 #include "app_data.h"
+#include "sd_manager.h"
 
 void weather_show(const AppData& app)
 {
@@ -146,6 +147,23 @@ void draw_main(const AppData& app)
         app.pressure
     );
     display.drawStr(53, 62, buf);
+
+    // SD Status
+    display.setFont(u8g2_font_5x8_tr);
+
+    if (!sd_isReady())
+    {
+        display.drawLine(6, 30, 10, 34);
+        display.drawLine(10, 30, 6, 34);
+    }
+    else if (sd_wasRecentlyWritten())
+    {
+        display.drawDisc(8, 32, 3);
+    }
+    else
+    {
+        display.drawCircle(8, 32, 3);
+    }
 }
 
 

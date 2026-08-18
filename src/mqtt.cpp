@@ -2,8 +2,9 @@
 #include <Arduino.h>
 #include "app_data.h"
 #include <ArduinoJson.h>
+#include "sd_manager.h"
 
-constexpr int HISTORY_PACKET_SIZE = 20;
+
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -41,98 +42,6 @@ void mqtt_connect()
     }
 }
 
-void sendTemperature(const AppData& app) {
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish > 10000)
-    {
-        lastPublish = millis();
-
-        char payload[16];
-
-        snprintf(
-            payload,
-            sizeof(payload),
-            "%.1f",
-            app.temp
-        );
-
-        mqttClient.publish(
-            "weather/temp",
-            payload
-        );
-    }
-}
-
-void sendHumidity(const AppData& app) {
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish > 10000)
-    {
-        lastPublish = millis();
-
-        char payload[16];
-
-        snprintf(
-            payload,
-            sizeof(payload),
-            "%.1f",
-            app.humidity
-        );
-
-        mqttClient.publish(
-            "weather/humidity",
-            payload
-        );
-    }
-}
-void sendPressure(const AppData& app) {
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish > 10000)
-    {
-        lastPublish = millis();
-
-        char payload[16];
-
-        snprintf(
-            payload,
-            sizeof(payload),
-            "%.1f",
-            app.pressure
-        );
-
-        mqttClient.publish(
-            "weather/pressure",
-            payload
-        );
-    }
-}
-
-void sendUptime()
-{
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish < 10000)
-        return;
-
-    lastPublish = millis();
-
-    char payload[16];
-
-    snprintf(
-        payload,
-        sizeof(payload),
-        "%lu s",
-        millis() / 1000
-    );
-
-    mqttClient.publish(
-        "weather/uptime",
-        payload
-    );
-}
-
 void sendIP()
 {
     mqttClient.publish(
@@ -141,80 +50,162 @@ void sendIP()
     );
 }
 
+// void sendLiveData(const AppData& app)
+// {
+//     static unsigned long lastPublish = 0;
+
+//     if (millis() - lastPublish < 10000)
+//         return;
+//     lastPublish = millis();
+
+//     JsonDocument doc;
+
+//     doc["temp"] = app.temp;
+//     doc["humidity"] = app.humidity;
+//     doc["pressure"] = app.pressure;
+//     doc["uptime"] = millis() / 1000;
+//     doc["wifi"] = app.wifiConnected;
+//     doc["ip"] = WiFi.localIP().toString();
+//     char timeStr[6];
+//     snprintf(timeStr, sizeof(timeStr), "%02d:%02d", app.hour, app.minute);
+//     doc["time"] = timeStr;
+//     doc["tendency"] = app.weatherTendency;
+
+
+//     char payload[256];
+//     serializeJson(doc, payload);
+
+//     mqttClient.publish(
+//         "weather/live",
+//         payload
+//     );
+// }
+
 void sendLiveData(const AppData& app)
 {
+    // =========================
+    // Lokale Mittelung alle 2 s
+    // =========================
+
+    static unsigned long lastValue = 0;
+
+    static float tempSum = 0;
+    static float humiditySum = 0;
+    static float pressureSum = 0;
+
+    static int sampleCount = 0;
+
+
+    if (millis() - lastValue >= 2000)
+    {
+        lastValue = millis();
+
+        tempSum += app.temp;
+        humiditySum += app.humidity;
+        pressureSum += app.pressure;
+
+        sampleCount++;
+    }
+
+
+    // =========================
+    // MQTT alle 60 s
+    // =========================
+
     static unsigned long lastPublish = 0;
-    if (millis() - lastPublish < 10000)
+
+    if (millis() - lastPublish < 60000)
         return;
+
     lastPublish = millis();
+
+
+    // Sicherheitsprüfung
+    if (sampleCount == 0)
+        return;
+
+
+    // Mittelwerte berechnen
+
+    float meanTemp =
+        tempSum / sampleCount;
+
+    float meanHumidity =
+        humiditySum / sampleCount;
+
+    float meanPressure =
+        pressureSum / sampleCount;
+
+
+        // =========================
+        // SD-Karte
+        // =========================
+
+            sd_saveData(
+                app,
+                meanTemp,
+                meanHumidity,
+                meanPressure
+            );
+
+
+    // =========================
+    // MQTT-Paket
+    // =========================
 
     JsonDocument doc;
 
-    doc["temp"] = app.temp;
-    doc["humidity"] = app.humidity;
-    doc["pressure"] = app.pressure;
-    doc["uptime"] = millis() / 1000;
-    doc["wifi"] = app.wifiConnected;
-    doc["ip"] = WiFi.localIP().toString();
+    doc["temp"] = meanTemp;
+    doc["humidity"] = meanHumidity;
+    doc["pressure"] = meanPressure;
+
+    doc["uptime"] =
+        millis() / 1000;
+
+    doc["wifi"] =
+        app.wifiConnected;
+
+    doc["ip"] =
+        WiFi.localIP().toString();
+
+
     char timeStr[6];
-    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", app.hour, app.minute);
+
+    snprintf(
+        timeStr,
+        sizeof(timeStr),
+        "%02d:%02d",
+        app.hour,
+        app.minute
+    );
+
     doc["time"] = timeStr;
-    doc["tendency"] = app.weatherTendency;
+
+    doc["tendency"] =
+        app.weatherTendency;
 
 
     char payload[256];
-    serializeJson(doc, payload);
 
-    mqttClient.publish(
-        "weather/live",
+    serializeJson(
+        doc,
         payload
     );
-}
 
-void sendHistoryData(const AppData& app)
-{
-
-    JsonDocument doc;
-
-    doc["count"] = app.validSamples;
-
-    JsonArray history = doc["tempHistory"].to<JsonArray>();
-
-    int startIndex;
-
-    if (app.validSamples < 128)
+    if (mqttClient.connected())
     {
-        startIndex = 0;
+        mqttClient.publish(
+        "weather/live",
+        payload);
     }
-    else
-    {
-        startIndex = (app.historyIndex + 1) % 128;
-    }
-
-    for (int i = 0; i < app.validSamples; i++)
-    {
-        int index = (startIndex + i) % 128;
-
-        history.add(round(app.tempHistory[index] * 10.0f) / 10.0f);
-    }
-
-    char payload[2048];
-
-    serializeJson(doc, payload);
-
     
-    bool success = mqttClient.publish(
-    "weather/history",
-    payload
-);
+    // =========================
+    // Mittelung zurücksetzen
+    // =========================
 
-// Serial.print("HISTORY count=");
-// Serial.print(app.validSamples);
+    tempSum = 0;
+    humiditySum = 0;
+    pressureSum = 0;
 
-// Serial.print(" payload=");
-// Serial.print(strlen(payload));
-// Serial.print(" bytes");
-
-// Serial.print(" publish=");
-// Serial.println(success ? "OK" : "FAILED");
+    sampleCount = 0;
 }

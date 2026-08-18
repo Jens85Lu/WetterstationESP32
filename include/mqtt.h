@@ -21,4 +21,10 @@ void sendPressure(const AppData& app);
 void sendUptime();
 void sendIP();
 void sendLiveData(const AppData& app);
-void sendHistoryData(const AppData& app);
+
+struct Measurement {
+    float temp;
+    float humidity;
+    float pressure;
+    unsigned long uptime;
+};

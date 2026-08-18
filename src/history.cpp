@@ -1,8 +1,9 @@
 #include "history.h"
 #include "app_data.h"
 #include <Arduino.h>
+#include "mqtt.h"
 
-constexpr int N = 6; // später: HISTORY_AVERAGE_COUNT
+constexpr int N = 180; // später: HISTORY_AVERAGE_COUNT
 
 static float sumTemp = 0.0f;
 static float sumHumidity = 0.0f;
@@ -42,10 +43,13 @@ void history_update() {
         sumHumidity = 0.0f;
         sumPressure = 0.0f;
         historyCounter = 0;
+
     }
+
     if (app.validSamples >=1) {
     updateMinMax();
     }
+
     determineWeatherTendency();
 }
 
