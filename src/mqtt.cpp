@@ -84,80 +84,14 @@ void sendIP()
 void sendLiveData(const AppData& app)
 {
     // =========================
-    // Lokale Mittelung alle 2 s
-    // =========================
-
-    static unsigned long lastValue = 0;
-
-    static float tempSum = 0;
-    static float humiditySum = 0;
-    static float pressureSum = 0;
-
-    static int sampleCount = 0;
-
-
-    if (millis() - lastValue >= 2000)
-    {
-        lastValue = millis();
-
-        tempSum += app.temp;
-        humiditySum += app.humidity;
-        pressureSum += app.pressure;
-
-        sampleCount++;
-    }
-
-
-    // =========================
-    // MQTT alle 60 s
-    // =========================
-
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish < 60000)
-        return;
-
-    lastPublish = millis();
-
-
-    // Sicherheitsprüfung
-    if (sampleCount == 0)
-        return;
-
-
-    // Mittelwerte berechnen
-
-    float meanTemp =
-        tempSum / sampleCount;
-
-    float meanHumidity =
-        humiditySum / sampleCount;
-
-    float meanPressure =
-        pressureSum / sampleCount;
-
-
-        // =========================
-        // SD-Karte
-        // =========================
-
-            sd_saveData(
-                app,
-                meanTemp,
-                meanHumidity,
-                meanPressure
-            );
-
-
-    // =========================
     // MQTT-Paket
     // =========================
 
     JsonDocument doc;
 
-    doc["temp"] = meanTemp;
-    doc["humidity"] = meanHumidity;
-    doc["pressure"] = meanPressure;
+    doc["temp"] = app.tempMean;
+    doc["humidity"] = app.humidityMean;
+    doc["pressure"] = app.pressureMean;
 
     doc["uptime"] =
         millis() / 1000;
@@ -198,14 +132,4 @@ void sendLiveData(const AppData& app)
         "weather/live",
         payload);
     }
-    
-    // =========================
-    // Mittelung zurücksetzen
-    // =========================
-
-    tempSum = 0;
-    humiditySum = 0;
-    pressureSum = 0;
-
-    sampleCount = 0;
 }

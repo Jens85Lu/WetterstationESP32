@@ -3,7 +3,7 @@
 
 #include "sensors.h"
 #include "app_data.h"
-#include "history.h"
+#include "averaging.h"
 #include "scheduler.h"
 #include "display.h"
 #include "button.h"
@@ -22,14 +22,12 @@ void setup() {
 
     Serial.begin(115200);
     delay(1000);
-
-    sd_init();
     
     sensors_init();
     display_init();
     button_init();
     led_init();
-
+    sd_init();
     wifi_init();
 
     // =========================
@@ -112,40 +110,14 @@ void loop() {
 
     if (
         app.wifiConnected &&
-        millis() - lastMQTTTry > 10000
+        !mqttClient.connected() &&
+        millis() - lastMQTTTry >= 10000
     )
     {
         lastMQTTTry = millis();
         mqtt_connect();
     }
 
-
     mqttClient.loop();
 
-    sendLiveData(app);
-
-    // =========================
-    // SD-Karte
-    // =========================
-
-    static unsigned long lastSDCheck = 0;
-
-    if (!sd_isReady())
-    {
-        if (millis() - lastSDCheck >= 30000)
-        {
-            lastSDCheck = millis();
-
-            sd_init();
-        }
-    }
-    if (sd_wasRecentlyWritten())
-    {
-        led_on();
-    }
-    else
-    {
-        led_off();
-    }
-    
 }

@@ -1,23 +1,51 @@
-#include "history.h"
+#include "averaging.h"
 #include "app_data.h"
 #include <Arduino.h>
 #include "mqtt.h"
 
-constexpr int N = 180; // später: HISTORY_AVERAGE_COUNT
+constexpr int OLED_HISTORY_AVERAGE_COUNT = 180; // später: HISTORY_AVERAGE_COUNT
 
-static float sumTemp = 0.0f;
-static float sumHumidity = 0.0f;
-static float sumPressure = 0.0f;
+constexpr int MEAN_AVERAGE_COUNT = 30; // Anzahl der Messungen für den Mittelwert
 
-static int historyCounter = 0;
 
-void history_update() {
+bool mean_update() {
+    static float tempSum = 0.0f;
+    static float humiditySum = 0.0f;
+    static float pressureSum = 0.0f;
+    static int sampleCount = 0;
+
+    tempSum += app.temp;
+    humiditySum += app.humidity;
+    pressureSum += app.pressure;
+    sampleCount++;
+
+    if (sampleCount >= MEAN_AVERAGE_COUNT) {
+        app.tempMean = tempSum / sampleCount;
+        app.humidityMean = humiditySum / sampleCount;
+        app.pressureMean = pressureSum / sampleCount;
+
+        // Reset sums and count for the next averaging period
+        tempSum = 0.0f;
+        humiditySum = 0.0f;
+        pressureSum = 0.0f;
+        sampleCount = 0;
+        return true;
+    }
+    return false;
+}
+
+void oled_history_update() {
+    static float sumTemp = 0.0f;
+    static float sumHumidity = 0.0f;
+    static float sumPressure = 0.0f;
+    static int historyCounter = 0;
+
     sumTemp += app.temp;
     sumHumidity += app.humidity;
     sumPressure += app.pressure;
     historyCounter++;
 
-    if (historyCounter >= N) {
+    if (historyCounter >= OLED_HISTORY_AVERAGE_COUNT) {
         // Durchschnitt der letzten N Werte berechnen
         float avgTemp = sumTemp / historyCounter;
         float avgHumidity = sumHumidity / historyCounter;
@@ -26,12 +54,8 @@ void history_update() {
         app.historyIndex = (app.historyIndex + 1) % 128; // Ringpuffer-Index aktualisieren
         
         app.tempHistory[app.historyIndex] = avgTemp;
-        app.tempAverage = avgTemp; // Store the average temperature for MQTT
-
         app.humidityHistory[app.historyIndex] = avgHumidity;
-        app.humidityAverage = avgHumidity; // Store the average humidity for MQTT
         app.pressureHistory[app.historyIndex] = avgPressure;
-        app.pressureAverage = avgPressure; // Store the average pressure for MQTT
 
                 
         if(app.validSamples < 128) {

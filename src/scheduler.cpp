@@ -1,11 +1,13 @@
 #include "scheduler.h"
 #include "sensors.h"
+#include "led.h"
 #include "app_data.h"
-#include "history.h"
+#include "averaging.h"
 #include <Arduino.h>
 #include "display.h"
 #include "ui_manager.h"
 #include "mqtt.h"
+#include "sd_manager.h"
 
 unsigned long now = 0;
 
@@ -19,7 +21,7 @@ void scheduler_run()
     now = millis();
 
     // =========================
-    // Sensoren
+    // Sensoren lesen, Mittelwerte berechnen, Daten speichern und senden
     // =========================
 
     if (now - lastSensorTime >= sensorInterval) {
@@ -28,7 +30,37 @@ void scheduler_run()
 
         sensors_read();
         update_appData();
-        history_update();
+        oled_history_update();
+        if (mean_update()) {
+            sd_saveData(
+                app,
+                app.tempMean,
+                app.humidityMean,
+                app.pressureMean
+            );
+
+            sendLiveData(app);
+        }
+    }
+
+    // =========================
+    // SD-Karte
+    // =========================
+    
+    static unsigned long lastSDCheck = 0;
+
+    if(!sd_isReady() && millis() - lastSDCheck >= 30000) {
+        lastSDCheck = millis();
+        sd_init();
+    }
+
+    if (sd_wasRecentlyWritten())
+    {
+        led_on();
+    }
+    else
+    {
+        led_off();
     }
 
 

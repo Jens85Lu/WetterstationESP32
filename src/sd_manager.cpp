@@ -1,5 +1,5 @@
 #include "sd_manager.h"
-
+#include "led.h"
 #include <Arduino.h>
 #include <SD.h>
 
@@ -139,8 +139,10 @@ void sd_saveData(
 
     file.close();
 
+    lastSDWrite = millis();
+
     Serial.println(
         "SD: Messwert gespeichert."
     );
-    lastSDWrite = millis();
+
 }

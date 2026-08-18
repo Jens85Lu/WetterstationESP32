@@ -1,6 +1,7 @@
 #pragma once
 
 void history_init();
-void history_update();
+void oled_history_update();
 void updateMinMax();
+bool mean_update();
 void determineWeatherTendency();
