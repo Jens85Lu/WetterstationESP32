@@ -27,7 +27,7 @@ struct AppData
     float maxPressure = -9999.0f;
     float pressureMean = 0.0f; // Mean pressure over the last (30) samples
 
-    // Historie
+    // OLED Historie
     float tempHistory[128];
     float humidityHistory[128];
     float pressureHistory[128];

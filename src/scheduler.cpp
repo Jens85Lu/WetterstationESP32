@@ -21,7 +21,7 @@ void scheduler_run()
     now = millis();
 
     // =========================
-    // Sensoren lesen, Mittelwerte berechnen, Daten speichern und senden
+    // Sensoren lesen, Mittelwerte aktualisieren, Daten speichern und senden
     // =========================
 
     if (now - lastSensorTime >= sensorInterval) {
@@ -31,20 +31,18 @@ void scheduler_run()
         sensors_read();
         update_appData();
         oled_history_update();
+        
         if (mean_update()) {
-            sd_saveData(
-                app,
-                app.tempMean,
-                app.humidityMean,
-                app.pressureMean
-            );
+
+            sd_saveData(app, app.tempMean, app.humidityMean, app.pressureMean);
 
             sendLiveData(app);
         }
     }
 
+
     // =========================
-    // SD-Karte
+    // SD-Karte Schreibanzeige und Initialisierung
     // =========================
     
     static unsigned long lastSDCheck = 0;

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "app_data.h"
+#include <Arduino.h>
+
 
 void sd_init();
 
@@ -13,3 +15,5 @@ void sd_saveData(
 
 bool sd_isReady();
 bool sd_wasRecentlyWritten();
+
+String sd_readHistory(int count);

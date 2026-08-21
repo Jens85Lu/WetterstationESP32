@@ -117,7 +117,7 @@ void loop() {
         lastMQTTTry = millis();
         mqtt_connect();
     }
-
+    
     mqttClient.loop();
 
 }

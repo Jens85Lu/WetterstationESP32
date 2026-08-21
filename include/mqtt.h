@@ -13,6 +13,7 @@ extern PubSubClient mqttClient;
 
 void mqtt_init();
 void mqtt_connect();
+void mqtt_callback(char* topic, byte* payload, unsigned int length);
 
 void sendTemperature(const AppData& app);
 void sendHumidity(const AppData& app);
