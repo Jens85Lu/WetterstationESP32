@@ -4,10 +4,13 @@
 #include "app_data.h"
 
 void wifi_init()
-{
+{   
+    WiFi.mode(WIFI_STA);
+    WiFi.setSleep(true);
+    
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-    int i = 0;   // <- NICHT static
+    int i = 0;   // <- NICHT static!
 
     app.wifiConnected = false;
 

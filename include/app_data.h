@@ -19,15 +19,15 @@ struct AppData
 
     float minTemp = 999.0f;
     float maxTemp = -999.0f ;
-    float tempAverage = 0.0f; // Average temperature over the last N samples
+    float tempMean = 0.0f; // Mean temperature over the last (30) samples
     float minHumidity = 999.0f;
     float maxHumidity = -999.0f;
-    float humidityAverage = 0.0f; // Average humidity over the last N samples
+    float humidityMean = 0.0f; // Mean humidity over the last (30) samples
     float minPressure = 9999.0f;
     float maxPressure = -9999.0f;
-    float pressureAverage = 0.0f; // Average pressure over the last N samples
+    float pressureMean = 0.0f; // Mean pressure over the last (30) samples
 
-    // Historie
+    // OLED Historie
     float tempHistory[128];
     float humidityHistory[128];
     float pressureHistory[128];
@@ -37,6 +37,7 @@ struct AppData
 
     int hour;
     int minute;
+    int second;
 
     int day;
     int month;

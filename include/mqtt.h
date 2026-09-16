@@ -13,6 +13,7 @@ extern PubSubClient mqttClient;
 
 void mqtt_init();
 void mqtt_connect();
+void mqtt_callback(char* topic, byte* payload, unsigned int length);
 
 void sendTemperature(const AppData& app);
 void sendHumidity(const AppData& app);
@@ -21,4 +22,10 @@ void sendPressure(const AppData& app);
 void sendUptime();
 void sendIP();
 void sendLiveData(const AppData& app);
-void sendHistoryData(const AppData& app);
+
+struct Measurement {
+    float temp;
+    float humidity;
+    float pressure;
+    unsigned long uptime;
+};

@@ -2,6 +2,10 @@
 #include <Arduino.h>
 #include "app_data.h"
 #include <ArduinoJson.h>
+#include "sd_manager.h"
+#include "time_manager.h"
+
+
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -12,6 +16,8 @@ void mqtt_init()
         MQTT_SERVER,
         MQTT_PORT
     );
+    mqttClient.setBufferSize(4096);
+    mqttClient.setCallback(mqtt_callback);
 }
 
 void mqtt_connect()
@@ -21,109 +27,26 @@ void mqtt_connect()
 
     Serial.println("MQTT connecting...");
 
-    if (mqttClient.connect("WetterstationESP32"))
+    if (mqttClient.connect("WetterstationESP32",
+                            "weather/status",
+                            0,
+                            true,
+                            "offline"))
     {
         Serial.println("MQTT connected");
 
+        mqttClient.subscribe("weather/history/request");
+
         mqttClient.publish(
             "weather/status",
-            "online", true
+            "online",
+            true
         );
 
         sendIP();
-    }
-}
-
-void sendTemperature(const AppData& app) {
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish > 10000)
-    {
-        lastPublish = millis();
-
-        char payload[16];
-
-        snprintf(
-            payload,
-            sizeof(payload),
-            "%.1f",
-            app.temp
-        );
-
-        mqttClient.publish(
-            "weather/temp",
-            payload
-        );
-    }
-}
-
-void sendHumidity(const AppData& app) {
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish > 10000)
-    {
-        lastPublish = millis();
-
-        char payload[16];
-
-        snprintf(
-            payload,
-            sizeof(payload),
-            "%.1f",
-            app.humidity
-        );
-
-        mqttClient.publish(
-            "weather/humidity",
-            payload
-        );
-    }
-}
-void sendPressure(const AppData& app) {
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish > 10000)
-    {
-        lastPublish = millis();
-
-        char payload[16];
-
-        snprintf(
-            payload,
-            sizeof(payload),
-            "%.1f",
-            app.pressure
-        );
-
-        mqttClient.publish(
-            "weather/pressure",
-            payload
-        );
-    }
-}
-
-void sendUptime()
-{
-    static unsigned long lastPublish = 0;
-
-    if (millis() - lastPublish < 10000)
         return;
-
-    lastPublish = millis();
-
-    char payload[16];
-
-    snprintf(
-        payload,
-        sizeof(payload),
-        "%lu s",
-        millis() / 1000
-    );
-
-    mqttClient.publish(
-        "weather/uptime",
-        payload
-    );
+    }
+    Serial.println("MQTT connection failed!");
 }
 
 void sendIP()
@@ -136,60 +59,130 @@ void sendIP()
 
 void sendLiveData(const AppData& app)
 {
-    static unsigned long lastPublish = 0;
-    if (millis() - lastPublish < 10000)
+    if (!app.timeValid)
+    {
+        Serial.println(
+        "Weltzeit nicht gueltig - Live-Daten uebersprungen."
+        );
         return;
-    lastPublish = millis();
+    }
+    // =========================
+    // MQTT-Paket
+    // =========================
 
     JsonDocument doc;
 
-    doc["temp"] = app.temp;
-    doc["humidity"] = app.humidity;
-    doc["pressure"] = app.pressure;
-    doc["uptime"] = millis() / 1000;
-    doc["wifi"] = app.wifiConnected;
-    doc["ip"] = WiFi.localIP().toString();
-    char timeStr[6];
-    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", app.hour, app.minute);
-    doc["time"] = timeStr;
-    doc["tendency"] = app.weatherTendency;
+    doc["temp"] = app.tempMean; // Alle 30 Samples à 2 Sekunden = 1 Minute Mittelwert
+    doc["humidity"] = app.humidityMean;
+    doc["pressure"] = app.pressureMean;
+
+    doc["uptime"] =
+        millis() / 1000;
+
+    doc["wifi"] =
+        app.wifiConnected;
+
+    doc["ip"] =
+        WiFi.localIP().toString();
+
+
+    String timestamp = getTimestamp(app);
+
+    doc["timestamp"] = timestamp;
+
+    doc["tendency"] =
+        app.weatherTendency;
 
 
     char payload[256];
-    serializeJson(doc, payload);
 
-    mqttClient.publish(
-        "weather/live",
+    serializeJson(
+        doc,
         payload
     );
+
+    if (mqttClient.connected())
+    {
+        mqttClient.publish(
+        "weather/live",
+        payload);
+    }
 }
 
-void sendHistoryData(const AppData& app)
+void mqtt_callback(char* topic, byte* payload, unsigned int length)
 {
-    static unsigned long lastPublish = 0;
-    if (millis() - lastPublish < 12000)
+    Serial.print("MQTT Nachricht auf Topic: ");
+    Serial.println(topic);
+
+    if (strcmp(topic, "weather/history/request") != 0)
+    {
         return;
-    lastPublish = millis();
+    }
+
+    Serial.println("History-Anfrage empfangen!");
 
     JsonDocument doc;
 
-    doc["temp"] = app.tempAverage;
-    doc["humidity"] = app.humidityAverage;
-    doc["pressure"] = app.pressureAverage;
-    doc["uptime"] = millis() / 1000;
-    doc["wifi"] = app.wifiConnected;
-    doc["ip"] = WiFi.localIP().toString();
-    char timeStr[6];
-    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", app.hour, app.minute);
-    doc["time"] = timeStr;
-    doc["tendency"] = app.weatherTendency;
+    DeserializationError error =
+        deserializeJson(doc, payload, length);
+
+    if (error)
+    {
+        Serial.print("JSON Fehler: ");
+        Serial.println(error.c_str());
+        return;
+    }
+
+    if(!doc["type"].is<const char*>())
+    {
+        Serial.println("JSON Fehler: 'type' ist kein String");
+        return;
+    }
+
+    const char* type = doc["type"];
 
 
-    char payload[256];
-    serializeJson(doc, payload);
+    // =========================
+    // Request: Sync-Info
+    // =========================
 
-    mqttClient.publish(
-        "weather/live",
-        payload, true
-    );
+    if (strcmp(type, "sync_info") == 0)
+    {
+        Serial.println("Request: Sync-Info");
+
+        String response = sd_getSyncInfo();
+        
+        Serial.print("Antwort: ");
+        Serial.println(response);
+
+        mqttClient.publish(
+            "weather/history/data",
+            response.c_str()
+        );
+
+        return;
+    }
+
+    // =========================
+    // Request: History
+    // =========================
+
+    if (strcmp(type, "history") == 0)
+    {
+        Serial.println("Request:History");
+        JsonArray intervals = doc["intervals"];
+
+        if (intervals.isNull())
+        {
+            Serial.println("JSON Fehler: 'intervals' fehlt");
+            return;
+        }
+
+        sd_readHistoryIntervals(intervals);
+        
+        return;
+    }
+
+
+    Serial.println("Unbekannter Request-Typ");
 }
