@@ -3,6 +3,7 @@
 #include "app_data.h"
 #include <ArduinoJson.h>
 #include "sd_manager.h"
+#include "time_manager.h"
 
 
 
@@ -58,6 +59,13 @@ void sendIP()
 
 void sendLiveData(const AppData& app)
 {
+    if (!app.timeValid)
+    {
+        Serial.println(
+        "Weltzeit nicht gueltig - Live-Daten uebersprungen."
+        );
+        return;
+    }
     // =========================
     // MQTT-Paket
     // =========================
@@ -78,17 +86,9 @@ void sendLiveData(const AppData& app)
         WiFi.localIP().toString();
 
 
-    char timeStr[6];
+    String timestamp = getTimestamp(app);
 
-    snprintf(
-        timeStr,
-        sizeof(timeStr),
-        "%02d:%02d",
-        app.hour,
-        app.minute
-    );
-
-    doc["time"] = timeStr;
+    doc["timestamp"] = timestamp;
 
     doc["tendency"] =
         app.weatherTendency;
@@ -114,49 +114,75 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
     Serial.print("MQTT Nachricht auf Topic: ");
     Serial.println(topic);
 
-    if (strcmp(topic, "weather/history/request") == 0)
+    if (strcmp(topic, "weather/history/request") != 0)
     {
-        Serial.println("History-Anfrage empfangen!");
+        return;
+    }
 
-        JsonDocument doc;
+    Serial.println("History-Anfrage empfangen!");
 
-        DeserializationError error = deserializeJson(doc, payload, length);
+    JsonDocument doc;
 
-        if (error)
-        {
-            Serial.print("JSON Fehler: ");
-            Serial.println(error.c_str());
-            return;
-        }
+    DeserializationError error =
+        deserializeJson(doc, payload, length);
 
-        int count = doc["count"] | 0;
+    if (error)
+    {
+        Serial.print("JSON Fehler: ");
+        Serial.println(error.c_str());
+        return;
+    }
 
-        Serial.print("Anzahl angefordert: ");
-        Serial.println(count);
+    if(!doc["type"].is<const char*>())
+    {
+        Serial.println("JSON Fehler: 'type' ist kein String");
+        return;
+    }
 
-        String response = sd_readHistory(count);
+    const char* type = doc["type"];
 
-        Serial.print("MQTT connected: ");
-        Serial.println(mqttClient.connected());
 
-        Serial.print("Payload length: ");
-        Serial.println(response.length());
+    // =========================
+    // Request: Sync-Info
+    // =========================
 
-        Serial.print("MQTT buffer size: ");
-        Serial.println(mqttClient.getBufferSize());
+    if (strcmp(type, "sync_info") == 0)
+    {
+        Serial.println("Request: Sync-Info");
 
-        bool success = mqttClient.publish(
+        String response = sd_getSyncInfo();
+        
+        Serial.print("Antwort: ");
+        Serial.println(response);
+
+        mqttClient.publish(
             "weather/history/data",
             response.c_str()
         );
 
-        if (success)
-        {
-            Serial.println("MQTT History publish erfolgreich.");
-        }
-        else
-        {
-            Serial.println("MQTT History publish FEHLGESCHLAGEN!");
-        }
+        return;
     }
+
+    // =========================
+    // Request: History
+    // =========================
+
+    if (strcmp(type, "history") == 0)
+    {
+        Serial.println("Request:History");
+        JsonArray intervals = doc["intervals"];
+
+        if (intervals.isNull())
+        {
+            Serial.println("JSON Fehler: 'intervals' fehlt");
+            return;
+        }
+
+        sd_readHistoryIntervals(intervals);
+        
+        return;
+    }
+
+
+    Serial.println("Unbekannter Request-Typ");
 }

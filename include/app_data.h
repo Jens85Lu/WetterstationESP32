@@ -37,6 +37,7 @@ struct AppData
 
     int hour;
     int minute;
+    int second;
 
     int day;
     int month;
