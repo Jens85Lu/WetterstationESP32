@@ -15,49 +15,6 @@
 
 #include <SD.h>
 
-void testHistoryWeekRange()
-{
-    JsonDocument doc;
-
-    JsonArray intervals = doc.to<JsonArray>();
-
-    JsonObject interval1 = intervals.add<JsonObject>();
-    interval1["from"] = "2026-12-31 23:58";
-    interval1["to"]   = "2027-01-01 00:02";
-
-    JsonObject interval2 = intervals.add<JsonObject>();
-    interval2["from"] = "2027-01-03 12:00";
-    interval2["to"]   = "2027-01-04 00:30";
-
-    WeekInfo firstWeek;
-    WeekInfo lastWeek;
-
-    bool success = getHistoryWeekRange(
-        intervals,
-        firstWeek,
-        lastWeek
-    );
-
-    if (!success)
-    {
-        Serial.println("getHistoryWeekRange fehlgeschlagen.");
-        return;
-    }
-
-    Serial.println("getHistoryWeekRange erfolgreich.");
-
-    Serial.print("First Week: ");
-    Serial.print(firstWeek.year);
-    Serial.print("-W");
-    Serial.println(firstWeek.week);
-
-    Serial.print("Last Week: ");
-    Serial.print(lastWeek.year);
-    Serial.print("-W");
-    Serial.println(lastWeek.week);
-}
-
-
 void setup() {
 
     delay(3000);
@@ -71,8 +28,6 @@ void setup() {
     led_init();
     sd_init();
     wifi_init();
-    testHistoryWeekRange();
-
 
     // =========================
     // OTA (over the air flashing)
@@ -139,7 +94,7 @@ void loop() {
 
     static unsigned long lastTimeUpdate = 0;
 
-    if (millis() - lastTimeUpdate > 10000)
+    if (millis() - lastTimeUpdate > 1000)
     {
         lastTimeUpdate = millis();
         time_update();

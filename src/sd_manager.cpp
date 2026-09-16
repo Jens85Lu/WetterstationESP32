@@ -213,6 +213,15 @@ void sd_saveData(
     lastSDWrite = millis();
 
     Serial.println("SD: Messwert gespeichert.");
+    Serial.print("T= ");
+    Serial.print(meanTemp);
+    Serial.print(", ");
+    Serial.print("H= ");
+    Serial.print(meanHumidity);
+    Serial.print(", ");
+    Serial.print("P= ");
+    Serial.println(meanPressure);
+
 }
 
 String sd_getFirstTimestamp()

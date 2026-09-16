@@ -16,7 +16,7 @@ struct AppData
     float pressure;
     float bmpTemperature;
     float pressure_seaLevel;
-
+    
     float minTemp = 999.0f;
     float maxTemp = -999.0f ;
     float tempMean = 0.0f; // Mean temperature over the last (30) samples
@@ -42,7 +42,6 @@ struct AppData
     int day;
     int month;
     int year;
-
 
     bool wifiConnected;
     bool timeValid = false;
