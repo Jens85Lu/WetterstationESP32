@@ -994,3 +994,100 @@ bool getHistoryWeekRange(
 
     return true;
 }
+
+String sd_readHistoryDebug(String from, String to)
+{
+    struct tm fromTime{};
+
+    if (!parseTimestamp(from, fromTime))
+    {
+        return "";
+    }
+
+    struct tm toTime{};
+
+    if (!parseTimestamp(to, toTime))
+    {
+        return "";
+    }
+
+    WeekInfo fromWeek = getWeekInfo(fromTime);
+    WeekInfo toWeek = getWeekInfo(toTime);
+
+    std::string filename = sd_getWeekFilename(fromWeek);
+
+    JsonDocument doc;
+    JsonArray history = doc.to<JsonArray>();
+
+    File file = SD.open(filename.c_str(), FILE_READ);
+
+    if (!file)
+    {
+        return "";
+    }
+
+    file.readStringUntil('\n');
+
+    while (file.available())
+    {
+        String line = file.readStringUntil('\n');
+        line.trim();
+
+        if (line.length() == 0)
+        {
+            continue;
+        }
+
+        int separator1 = line.indexOf(',');
+        int separator2 = line.indexOf(',', separator1 + 1);
+        int separator3 = line.indexOf(',', separator2 + 1);
+        int separator4 = line.indexOf(',', separator3 + 1);
+
+        String timestamp = line.substring(0, separator1);
+
+        String temperature = line.substring(
+            separator1 + 1,
+            separator2
+        );
+
+        String humidity = line.substring(
+            separator2 + 1,
+            separator3
+        );
+
+        String pressure = line.substring(
+            separator3 + 1,
+            separator4
+        );
+
+        String millis = line.substring(
+            separator4 + 1
+        );
+
+        String fromTimestamp = from + ":00";
+        String toTimestamp = to + ":59";
+
+        if (timestamp < fromTimestamp || timestamp > toTimestamp)
+        {
+            continue;
+        }
+
+        JsonObject entry = history.add<JsonObject>();
+
+        entry["timestamp"] = timestamp;
+        entry["temperature"] = temperature.toFloat();
+        entry["humidity"] = humidity.toFloat();
+        entry["pressure"] = pressure.toFloat();
+        entry["millis"] = millis.toFloat();
+    }
+    
+    file.close();
+
+    String response;
+    serializeJson(doc, response);
+
+    return response;
+
+    return "";        
+
+}

@@ -35,3 +35,5 @@ String sd_getSyncInfo();
 
 String sd_readHistoryIntervals(JsonArray& intervals);
 
+String sd_readHistoryDebug(String from, String to);
+

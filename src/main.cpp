@@ -12,8 +12,10 @@
 #include "time_manager.h"
 #include "mqtt.h"
 #include "sd_manager.h"
-
+#include <WebServer.h>
 #include <SD.h>
+
+WebServer server(80);
 
 void setup() {
 
@@ -28,6 +30,7 @@ void setup() {
     led_init();
     sd_init();
     wifi_init();
+    Serial.println(WiFi.localIP());
 
     // =========================
     // OTA (over the air flashing)
@@ -70,6 +73,38 @@ void setup() {
 
     time_init();
     mqtt_init();
+
+    // =========================
+    // Webserver
+    // =========================
+
+    server.on("/api/history", HTTP_GET, []() {
+
+        if (!server.hasArg("from") || !server.hasArg("to"))
+        {
+            server.send(
+                400,
+                "application/json",
+                "{\"error\":\"Parameter from und to erforderlich\"}"
+            );
+            return;
+        }
+
+        String from = server.arg("from");
+        String to = server.arg("to");
+
+        String response = sd_readHistoryDebug(from, to);
+
+        server.send(
+            200,
+            "application/json",
+            response
+        );
+    });
+
+    server.begin();
+
+    Serial.println("Webserver bereit!");
 }
 
 
@@ -110,7 +145,7 @@ void loop() {
     if (
         app.wifiConnected &&
         !mqttClient.connected() &&
-        millis() - lastMQTTTry >= 10000
+        millis() - lastMQTTTry >= 60000
     )
     {
         lastMQTTTry = millis();
@@ -119,4 +154,9 @@ void loop() {
     
     mqttClient.loop();
 
+    // =========================
+    // Webserver
+    // =========================
+    
+    server.handleClient();
 }
